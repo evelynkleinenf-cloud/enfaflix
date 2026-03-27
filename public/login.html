@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enfaflix | Login</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="login">
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand brand-with-logo">
+          <img src="/logo.png" alt="Logo Enfaflix" class="brand-logo" />
+          <span>Enfaflix</span>
+        </a>
+        <nav class="site-nav" data-site-nav></nav>
+      </div>
+    </header>
+
+    <main class="container page-center">
+      <section class="form-card">
+        <h1>Entrar</h1>
+        <p>Acesse sua conta preenchendo os campos abaixo.</p>
+
+        <form data-form-type="login" class="form">
+          <label for="login-email">E-mail</label>
+          <input id="login-email" name="email" type="email" placeholder="voc@email.com" required />
+
+          <label for="login-senha">Senha</label>
+          <input id="login-senha" name="senha" type="password" placeholder="Sua senha" required />
+
+          <button type="submit" class="button primary full">Entrar</button>
+          <p class="form-message" aria-live="polite"></p>
+        </form>
+
+        <p class="form-helper">
+          Ainda não tem conta <a href="/cadastro">Cadastre-se aqui</a>.
+        </p>
+      </section>
+    </main>
+
+    <script src="/script.js"></script>
+  </body>
+</html>

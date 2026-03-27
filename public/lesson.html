@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enfaflix | Aula</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="lesson">
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand brand-with-logo">
+          <img src="/logo.png" alt="Logo Enfaflix" class="brand-logo" />
+          <span>Enfaflix</span>
+        </a>
+        <nav class="site-nav" data-site-nav></nav>
+      </div>
+    </header>
+
+    <main class="container portal-shell">
+      <section class="portal-hero">
+        <div>
+          <span class="eyebrow">Página de aula</span>
+          <h1 id="lesson-title">Carregando aula...</h1>
+          <p id="lesson-course">Preparando o conteúdo liberado para você.</p>
+        </div>
+      </section>
+
+      <section id="lesson-lock" class="panel hidden">
+        <h2>Conteúdo bloqueado</h2>
+        <p id="lesson-lock-message"></p>
+        <a id="lesson-lock-link" class="button primary" href="/cursos">Ver cursos</a>
+      </section>
+
+      <section id="lesson-content-panel" class="lesson-layout hidden">
+        <article class="lesson-content">
+          <div class="lesson-meta">Conteúdo premium</div>
+          <div id="lesson-video-wrapper" class="hidden">
+            <iframe
+              id="lesson-video"
+              class="lesson-video lesson-video-frame"
+              title="Vídeo da aula"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <p id="lesson-content"></p>
+          <div id="lesson-assets" class="lesson-assets hidden">
+            <a id="lesson-pdf-link" class="button secondary hidden" href="#" target="_blank" rel="noreferrer">Abrir PDF</a>
+            <a id="lesson-text-link" class="button secondary hidden" href="#" target="_blank" rel="noreferrer">Baixar texto</a>
+          </div>
+        </article>
+
+        <aside class="panel">
+          <h2>Outras aulas do curso</h2>
+          <div id="lesson-navigation" class="lesson-nav"></div>
+          <div id="course-materials-panel" class="materials-panel hidden">
+            <h2>Materiais complementares</h2>
+            <div id="course-materials-list" class="lesson-nav"></div>
+          </div>
+          <div class="course-actions">
+            <button id="complete-lesson-button" class="button primary" type="button">Marcar como concluída</button>
+          </div>
+          <p id="lesson-progress-message" class="form-message" aria-live="polite"></p>
+          <div id="evaluation-panel" class="hidden">
+            <h2>Avaliação final</h2>
+            <form id="evaluation-form" class="form">
+              <label for="evaluation-rating">Nota do curso (1 a 5)</label>
+              <select id="evaluation-rating" name="rating" required>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+              </select>
+
+              <label for="evaluation-learning">O que voc? mais aprendeu</label>
+              <textarea id="evaluation-learning" name="learning" rows="4"></textarea>
+
+              <label for="evaluation-improve">O que podemos melhorar</label>
+              <textarea id="evaluation-improve" name="improve" rows="4"></textarea>
+
+              <label for="evaluation-comment">Coment?rio final</label>
+              <textarea id="evaluation-comment" name="comment" rows="4"></textarea>
+
+              <button class="button primary full" type="submit">Enviar avaliação</button>
+              <p id="evaluation-message" class="form-message" aria-live="polite"></p>
+            </form>
+            <a id="certificate-link" class="button secondary hidden" href="#">Abrir certificado</a>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="/script.js"></script>
+  </body>
+</html>

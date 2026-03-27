@@ -1,0 +1,1333 @@
+const fs = require("fs");
+const path = require("path");
+const sqlite3 = require("sqlite3").verbose();
+
+const dataDir = path.join(__dirname, "..", "data");
+const dbPath = path.join(dataDir, "enfaflix.sqlite");
+const legacyUsersFile = path.join(dataDir, "users.json");
+
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+const db = new sqlite3.Database(dbPath);
+
+function run(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function onRun(error) {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve({
+        lastID: this.lastID,
+        changes: this.changes
+      });
+    });
+  });
+}
+
+function get(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (error, row) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(row || null);
+    });
+  });
+}
+
+function all(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (error, rows) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve(rows || []);
+    });
+  });
+}
+
+function mapUser(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    nome: row.nome,
+    email: row.email,
+    passwordHash: row.password_hash,
+    isAdmin: Boolean(row.is_admin),
+    createdAt: row.created_at
+  };
+}
+
+function mapCourse(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || "",
+    priceCents: Number(row.price_cents || 0),
+    createdAt: row.created_at,
+    lessonsCount: row.lessons_count !== undefined ? Number(row.lessons_count || 0) : undefined,
+    firstLessonId: row.first_lesson_id ? Number(row.first_lesson_id) : null,
+    enrolled: row.enrolled !== undefined ? Boolean(row.enrolled) : undefined,
+    enrolledAt: row.enrolled_at || null
+  };
+}
+
+function mapLesson(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    courseId: row.course_id,
+    title: row.title,
+    content: row.content || "",
+    textFilePath: row.text_file_path || null,
+    videoPath: row.video_path || null,
+    youtubeUrl: row.youtube_url || null,
+    pdfPath: row.pdf_path || null,
+    position: Number(row.position || 1),
+    createdAt: row.created_at,
+    courseTitle: row.course_title || null,
+    courseDescription: row.course_description || null
+  };
+}
+
+function mapOrder(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id,
+    status: row.status,
+    amountCents: Number(row.amount_cents || 0),
+    originalAmountCents: Number(row.original_amount_cents || 0),
+    discountCents: Number(row.discount_cents || 0),
+    promoCode: row.promo_code || null,
+    groupReference: row.group_reference || null,
+    reference: row.reference,
+    paymentNote: row.payment_note || null,
+    createdAt: row.created_at,
+    approvedAt: row.approved_at || null,
+    userName: row.user_name || null,
+    userEmail: row.user_email || null,
+    courseTitle: row.course_title || null
+  };
+}
+
+function mapPromoCode(row) {
+  if (!row) {
+    return null;
+  }
+
+  let eligibleCourseIds = [];
+  try {
+    eligibleCourseIds = row.eligible_course_ids ? JSON.parse(row.eligible_course_ids) : [];
+  } catch (error) {
+    eligibleCourseIds = [];
+  }
+
+  return {
+    id: row.id,
+    code: row.code,
+    title: row.title || row.code,
+    description: row.description || "",
+    discountType: row.discount_type,
+    discountValue: Number(row.discount_value || 0),
+    minCourses: Number(row.min_courses || 1),
+    eligibleCourseIds,
+    maxRedemptions: row.max_redemptions !== null && row.max_redemptions !== undefined
+      ? Number(row.max_redemptions)
+      : null,
+    expiresAt: row.expires_at || null,
+    active: Boolean(row.active),
+    createdAt: row.created_at
+  };
+}
+
+function mapCourseMaterial(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    courseId: row.course_id,
+    title: row.title,
+    filePath: row.file_path,
+    createdAt: row.created_at
+  };
+}
+
+function mapCourseEvaluation(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id,
+    rating: Number(row.rating || 0),
+    answersJson: row.answers_json || null,
+    comment: row.comment || "",
+    createdAt: row.created_at,
+    userName: row.user_name || null,
+    userEmail: row.user_email || null,
+    courseTitle: row.course_title || null
+  };
+}
+
+function mapCertificate(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id,
+    certificateCode: row.certificate_code,
+    issuedAt: row.issued_at,
+    userName: row.user_name || null,
+    courseTitle: row.course_title || null
+  };
+}
+
+async function initDatabase() {
+  await run("PRAGMA foreign_keys = ON");
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      is_admin INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS courses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      price_cents INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS lessons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      course_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT,
+      text_file_path TEXT,
+      video_path TEXT,
+      youtube_url TEXT,
+      pdf_path TEXT,
+      position INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS enrollments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      course_id INTEGER NOT NULL,
+      enrolled_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (user_id, course_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      course_id INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      amount_cents INTEGER NOT NULL DEFAULT 0,
+      original_amount_cents INTEGER NOT NULL DEFAULT 0,
+      discount_cents INTEGER NOT NULL DEFAULT 0,
+      promo_code TEXT,
+      group_reference TEXT,
+      reference TEXT NOT NULL UNIQUE,
+      payment_note TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      approved_at TEXT,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS promo_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT NOT NULL UNIQUE,
+      title TEXT,
+      description TEXT,
+      discount_type TEXT NOT NULL DEFAULT 'percent',
+      discount_value INTEGER NOT NULL DEFAULT 0,
+      min_courses INTEGER NOT NULL DEFAULT 1,
+      eligible_course_ids TEXT,
+      max_redemptions INTEGER,
+      expires_at TEXT,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS lesson_completions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      lesson_id INTEGER NOT NULL,
+      completed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (user_id, lesson_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS course_evaluations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      course_id INTEGER NOT NULL,
+      rating INTEGER NOT NULL,
+      answers_json TEXT,
+      comment TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (user_id, course_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS certificates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      course_id INTEGER NOT NULL,
+      certificate_code TEXT NOT NULL UNIQUE,
+      issued_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (user_id, course_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS course_materials (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      course_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    )
+  `);
+
+  await run("CREATE INDEX IF NOT EXISTS idx_lessons_course_id ON lessons(course_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_enrollments_user_id ON enrollments(user_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_enrollments_course_id ON enrollments(course_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_orders_course_id ON orders(course_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_orders_group_reference ON orders(group_reference)");
+  await run("CREATE INDEX IF NOT EXISTS idx_lesson_completions_user_id ON lesson_completions(user_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_lesson_completions_lesson_id ON lesson_completions(lesson_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_course_evaluations_course_id ON course_evaluations(course_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_certificates_course_id ON certificates(course_id)");
+  await run("CREATE INDEX IF NOT EXISTS idx_course_materials_course_id ON course_materials(course_id)");
+
+  await migrateLegacyUsers();
+  await seedCoursesAndLessons();
+}
+
+async function migrateLegacyUsers() {
+  if (!fs.existsSync(legacyUsersFile)) {
+    return;
+  }
+
+  const raw = fs.readFileSync(legacyUsersFile, "utf8").trim();
+  if (!raw) {
+    return;
+  }
+
+  let users;
+  try {
+    users = JSON.parse(raw);
+  } catch (error) {
+    return;
+  }
+
+  if (!Array.isArray(users) || users.length === 0) {
+    return;
+  }
+
+  for (const user of users) {
+    const email = String(user.email || "").trim().toLowerCase();
+    if (!email) {
+      continue;
+    }
+
+    const existing = await findUserByEmail(email);
+    if (existing) {
+      continue;
+    }
+
+    await run(
+      `
+        INSERT INTO users (nome, email, password_hash, is_admin, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `,
+      [
+        String(user.nome || "Aluno").trim(),
+        email,
+        user.passwordHash || "",
+        user.isAdmin ? 1 : 0,
+        user.createdAt || new Date().toISOString()
+      ]
+    );
+  }
+
+  fs.writeFileSync(legacyUsersFile, "[]", "utf8");
+}
+
+async function createUser({ nome, email, passwordHash }) {
+  const countRow = await get("SELECT COUNT(*) AS total FROM users");
+  const isAdmin = countRow && Number(countRow.total) === 0 ? 1 : 0;
+  const result = await run(
+    `
+      INSERT INTO users (nome, email, password_hash, is_admin, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `,
+    [nome, email, passwordHash, isAdmin, new Date().toISOString()]
+  );
+
+  return findUserById(result.lastID);
+}
+
+async function findUserByEmail(email) {
+  const row = await get("SELECT * FROM users WHERE email = ?", [email]);
+  return mapUser(row);
+}
+
+async function findUserById(id) {
+  const row = await get("SELECT * FROM users WHERE id = ?", [id]);
+  return mapUser(row);
+}
+
+async function createCourse({ title, description, priceCents }) {
+  const result = await run(
+    `
+      INSERT INTO courses (title, description, price_cents, created_at)
+      VALUES (?, ?, ?, ?)
+    `,
+    [title, description || "", priceCents || 0, new Date().toISOString()]
+  );
+
+  return getCourseById(result.lastID);
+}
+
+async function updateCourse(courseId, { title, description, priceCents }) {
+  await run(
+    `
+      UPDATE courses
+      SET title = ?, description = ?, price_cents = ?
+      WHERE id = ?
+    `,
+    [title, description || "", priceCents || 0, courseId]
+  );
+
+  return getCourseById(courseId);
+}
+
+async function deleteCourse(courseId) {
+  return run("DELETE FROM courses WHERE id = ?", [courseId]);
+}
+
+async function createLesson({
+  courseId,
+  title,
+  content,
+  textFilePath,
+  videoPath,
+  youtubeUrl,
+  pdfPath,
+  position
+}) {
+  const result = await run(
+    `
+      INSERT INTO lessons (
+        course_id,
+        title,
+        content,
+        text_file_path,
+        video_path,
+        youtube_url,
+        pdf_path,
+        position,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+      courseId,
+      title,
+      content || "",
+      textFilePath || null,
+      videoPath || null,
+      youtubeUrl || null,
+      pdfPath || null,
+      position || 1,
+      new Date().toISOString()
+    ]
+  );
+
+  return getLessonById(result.lastID);
+}
+
+async function updateLessonAssets(lessonId, { textFilePath, videoPath, youtubeUrl, pdfPath }) {
+  await run(
+    `
+      UPDATE lessons
+      SET
+        text_file_path = COALESCE(?, text_file_path),
+        video_path = COALESCE(?, video_path),
+        youtube_url = COALESCE(?, youtube_url),
+        pdf_path = COALESCE(?, pdf_path)
+      WHERE id = ?
+    `,
+    [textFilePath ?? null, videoPath ?? null, youtubeUrl ?? null, pdfPath ?? null, lessonId]
+  );
+
+  return getLessonById(lessonId);
+}
+
+async function updateLesson(lessonId, { title, content, position }) {
+  await run(
+    `
+      UPDATE lessons
+      SET title = ?, content = ?, position = ?
+      WHERE id = ?
+    `,
+    [title, content || "", position || 1, lessonId]
+  );
+
+  return getLessonById(lessonId);
+}
+
+async function deleteLesson(lessonId) {
+  return run("DELETE FROM lessons WHERE id = ?", [lessonId]);
+}
+
+async function getLessonById(lessonId) {
+  const row = await get(
+    `
+      SELECT
+        l.id,
+        l.course_id,
+        l.title,
+        l.content,
+        l.text_file_path,
+        l.video_path,
+        l.youtube_url,
+        l.pdf_path,
+        l.position,
+        l.created_at,
+        c.title AS course_title,
+        c.description AS course_description
+      FROM lessons l
+      INNER JOIN courses c ON c.id = l.course_id
+      WHERE l.id = ?
+    `,
+    [lessonId]
+  );
+
+  return mapLesson(row);
+}
+
+async function listLessonsByCourse(courseId) {
+  const rows = await all(
+    `
+      SELECT
+        id,
+        course_id,
+        title,
+        content,
+        text_file_path,
+        video_path,
+        youtube_url,
+        pdf_path,
+        position,
+        created_at
+      FROM lessons
+      WHERE course_id = ?
+      ORDER BY position ASC, id ASC
+    `,
+    [courseId]
+  );
+
+  return rows.map(mapLesson);
+}
+
+async function getCourseById(courseId, userId = null) {
+  const row = await get(
+    `
+      SELECT
+        c.id,
+        c.title,
+        c.description,
+        c.price_cents,
+        c.created_at,
+        CASE
+          WHEN e.id IS NOT NULL THEN 1
+          ELSE 0
+        END AS enrolled
+      FROM courses c
+      LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
+      WHERE c.id = ?
+    `,
+    [userId, courseId]
+  );
+
+  return mapCourse(row);
+}
+
+async function listCourses(userId = null) {
+  const rows = await all(
+    `
+      SELECT
+        c.id,
+        c.title,
+        c.description,
+        c.price_cents,
+        c.created_at,
+        COUNT(DISTINCT l.id) AS lessons_count,
+        MIN(l.id) AS first_lesson_id,
+        CASE
+          WHEN e.id IS NOT NULL THEN 1
+          ELSE 0
+        END AS enrolled
+      FROM courses c
+      LEFT JOIN lessons l ON l.course_id = c.id
+      LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = ?
+      GROUP BY c.id, e.id
+      ORDER BY c.id ASC
+    `,
+    [userId]
+  );
+
+  return rows.map(mapCourse);
+}
+
+async function listDashboardCourses(userId) {
+  const rows = await all(
+    `
+      SELECT
+        c.id,
+        c.title,
+        c.description,
+        c.price_cents,
+        c.created_at,
+        COUNT(DISTINCT l.id) AS lessons_count,
+        MIN(l.id) AS first_lesson_id,
+        MAX(e.enrolled_at) AS enrolled_at
+      FROM enrollments e
+      INNER JOIN courses c ON c.id = e.course_id
+      LEFT JOIN lessons l ON l.course_id = c.id
+      WHERE e.user_id = ?
+      GROUP BY c.id
+      ORDER BY enrolled_at DESC, c.id DESC
+    `,
+    [userId]
+  );
+
+  return rows.map(mapCourse);
+}
+
+async function enrollUserInCourse(userId, courseId) {
+  await run(
+    `
+      INSERT OR IGNORE INTO enrollments (user_id, course_id, enrolled_at)
+      VALUES (?, ?, ?)
+    `,
+    [userId, courseId, new Date().toISOString()]
+  );
+}
+
+async function userHasEnrollment(userId, courseId) {
+  const row = await get(
+    "SELECT id FROM enrollments WHERE user_id = ? AND course_id = ?",
+    [userId, courseId]
+  );
+
+  return Boolean(row);
+}
+
+async function createCourseMaterial({ courseId, title, filePath }) {
+  const result = await run(
+    `
+      INSERT INTO course_materials (course_id, title, file_path, created_at)
+      VALUES (?, ?, ?, ?)
+    `,
+    [courseId, title, filePath, new Date().toISOString()]
+  );
+
+  return getCourseMaterialById(result.lastID);
+}
+
+async function listCourseMaterials(courseId) {
+  const rows = await all(
+    `
+      SELECT id, course_id, title, file_path, created_at
+      FROM course_materials
+      WHERE course_id = ?
+      ORDER BY created_at DESC, id DESC
+    `,
+    [courseId]
+  );
+
+  return rows.map(mapCourseMaterial);
+}
+
+async function getCourseMaterialById(materialId) {
+  const row = await get(
+    `
+      SELECT id, course_id, title, file_path, created_at
+      FROM course_materials
+      WHERE id = ?
+    `,
+    [materialId]
+  );
+
+  return mapCourseMaterial(row);
+}
+
+async function deleteCourseMaterial(materialId) {
+  return run("DELETE FROM course_materials WHERE id = ?", [materialId]);
+}
+
+async function createOrder({
+  userId,
+  courseId,
+  amountCents,
+  originalAmountCents,
+  discountCents,
+  promoCode,
+  groupReference
+}) {
+  const reference = `PED-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  const result = await run(
+    `
+      INSERT INTO orders (
+        user_id,
+        course_id,
+        status,
+        amount_cents,
+        original_amount_cents,
+        discount_cents,
+        promo_code,
+        group_reference,
+        reference,
+        created_at
+      )
+      VALUES (?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+      userId,
+      courseId,
+      amountCents || 0,
+      originalAmountCents || amountCents || 0,
+      discountCents || 0,
+      promoCode || null,
+      groupReference || null,
+      reference,
+      new Date().toISOString()
+    ]
+  );
+
+  return getOrderById(result.lastID);
+}
+
+async function getOrderById(orderId) {
+  const row = await get(
+    `
+      SELECT
+        o.id,
+        o.user_id,
+        o.course_id,
+        o.status,
+        o.amount_cents,
+        o.original_amount_cents,
+        o.discount_cents,
+        o.promo_code,
+        o.group_reference,
+        o.reference,
+        o.payment_note,
+        o.created_at,
+        o.approved_at,
+        u.nome AS user_name,
+        u.email AS user_email,
+        c.title AS course_title
+      FROM orders o
+      INNER JOIN users u ON u.id = o.user_id
+      INNER JOIN courses c ON c.id = o.course_id
+      WHERE o.id = ?
+    `,
+    [orderId]
+  );
+
+  return mapOrder(row);
+}
+
+async function listOrdersByUser(userId) {
+  const rows = await all(
+    `
+      SELECT
+        o.id,
+        o.user_id,
+        o.course_id,
+        o.status,
+        o.amount_cents,
+        o.original_amount_cents,
+        o.discount_cents,
+        o.promo_code,
+        o.group_reference,
+        o.reference,
+        o.payment_note,
+        o.created_at,
+        o.approved_at,
+        u.nome AS user_name,
+        u.email AS user_email,
+        c.title AS course_title
+      FROM orders o
+      INNER JOIN users u ON u.id = o.user_id
+      INNER JOIN courses c ON c.id = o.course_id
+      WHERE o.user_id = ?
+      ORDER BY o.created_at DESC, o.id DESC
+    `,
+    [userId]
+  );
+
+  return rows.map(mapOrder);
+}
+
+async function listPendingOrders() {
+  const rows = await all(
+    `
+      SELECT
+        o.id,
+        o.user_id,
+        o.course_id,
+        o.status,
+        o.amount_cents,
+        o.original_amount_cents,
+        o.discount_cents,
+        o.promo_code,
+        o.group_reference,
+        o.reference,
+        o.payment_note,
+        o.created_at,
+        o.approved_at,
+        u.nome AS user_name,
+        u.email AS user_email,
+        c.title AS course_title
+      FROM orders o
+      INNER JOIN users u ON u.id = o.user_id
+      INNER JOIN courses c ON c.id = o.course_id
+      WHERE o.status = 'pending'
+      ORDER BY o.created_at ASC, o.id ASC
+    `
+  );
+
+  return rows.map(mapOrder);
+}
+
+async function approveOrder(orderId, paymentNote = "") {
+  await run(
+    `
+      UPDATE orders
+      SET status = 'approved', payment_note = ?, approved_at = ?
+      WHERE id = ?
+    `,
+    [paymentNote || null, new Date().toISOString(), orderId]
+  );
+
+  return getOrderById(orderId);
+}
+
+async function approveOrdersByGroup(groupReference, paymentNote = "") {
+  await run(
+    `
+      UPDATE orders
+      SET status = 'approved', payment_note = ?, approved_at = ?
+      WHERE group_reference = ? AND status = 'pending'
+    `,
+    [paymentNote || null, new Date().toISOString(), groupReference]
+  );
+
+  return listOrdersByGroupReference(groupReference);
+}
+
+async function listOrdersByGroupReference(groupReference) {
+  const rows = await all(
+    `
+      SELECT
+        o.id,
+        o.user_id,
+        o.course_id,
+        o.status,
+        o.amount_cents,
+        o.original_amount_cents,
+        o.discount_cents,
+        o.promo_code,
+        o.group_reference,
+        o.reference,
+        o.payment_note,
+        o.created_at,
+        o.approved_at,
+        u.nome AS user_name,
+        u.email AS user_email,
+        c.title AS course_title
+      FROM orders o
+      INNER JOIN users u ON u.id = o.user_id
+      INNER JOIN courses c ON c.id = o.course_id
+      WHERE o.group_reference = ?
+      ORDER BY o.id ASC
+    `,
+    [groupReference]
+  );
+
+  return rows.map(mapOrder);
+}
+
+async function createPromoCode({
+  code,
+  title,
+  description,
+  discountType,
+  discountValue,
+  minCourses,
+  eligibleCourseIds,
+  maxRedemptions,
+  expiresAt
+}) {
+  const normalizedCode = String(code || "").trim().toUpperCase();
+  await run(
+    `
+      INSERT INTO promo_codes (
+        code,
+        title,
+        description,
+        discount_type,
+        discount_value,
+        min_courses,
+        eligible_course_ids,
+        max_redemptions,
+        expires_at,
+        active,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+    `,
+    [
+      normalizedCode,
+      String(title || normalizedCode).trim(),
+      String(description || "").trim(),
+      discountType,
+      discountValue,
+      Math.max(1, Number(minCourses || 1)),
+      JSON.stringify(Array.from(new Set((eligibleCourseIds || []).map((value) => Number(value)).filter(Boolean)))),
+      maxRedemptions ? Math.max(1, Number(maxRedemptions)) : null,
+      expiresAt || null,
+      new Date().toISOString()
+    ]
+  );
+
+  return findPromoCodeByCode(normalizedCode);
+}
+
+async function listPromoCodes() {
+  const rows = await all(
+    `
+      SELECT id, code, title, description, discount_type, discount_value, min_courses, eligible_course_ids, max_redemptions, expires_at, active, created_at
+      FROM promo_codes
+      ORDER BY created_at DESC, id DESC
+    `
+  );
+
+  return rows.map(mapPromoCode);
+}
+
+async function findPromoCodeByCode(code) {
+  const row = await get(
+    `
+      SELECT id, code, title, description, discount_type, discount_value, min_courses, eligible_course_ids, max_redemptions, expires_at, active, created_at
+      FROM promo_codes
+      WHERE code = ?
+    `,
+    [String(code || "").trim().toUpperCase()]
+  );
+
+  return mapPromoCode(row);
+}
+
+async function deletePromoCode(id) {
+  return run("DELETE FROM promo_codes WHERE id = ?", [id]);
+}
+
+async function countPromoCodeRedemptions(code) {
+  const row = await get(
+    `
+      SELECT COUNT(DISTINCT user_id || ':' || COALESCE(group_reference, reference)) AS total
+      FROM orders
+      WHERE promo_code = ? AND status = 'approved'
+    `,
+    [String(code || "").trim().toUpperCase()]
+  );
+
+  return row ? Number(row.total || 0) : 0;
+}
+
+async function completeLesson(userId, lessonId) {
+  await run(
+    `
+      INSERT OR IGNORE INTO lesson_completions (user_id, lesson_id, completed_at)
+      VALUES (?, ?, ?)
+    `,
+    [userId, lessonId, new Date().toISOString()]
+  );
+}
+
+async function listCompletedLessonIdsByCourse(userId, courseId) {
+  const rows = await all(
+    `
+      SELECT lc.lesson_id
+      FROM lesson_completions lc
+      INNER JOIN lessons l ON l.id = lc.lesson_id
+      WHERE lc.user_id = ? AND l.course_id = ?
+    `,
+    [userId, courseId]
+  );
+
+  return rows.map((row) => Number(row.lesson_id));
+}
+
+async function getCourseProgress(userId, courseId) {
+  const totalRow = await get(
+    `
+      SELECT COUNT(*) AS total
+      FROM lessons
+      WHERE course_id = ?
+    `,
+    [courseId]
+  );
+  const completedRow = await get(
+    `
+      SELECT COUNT(*) AS total
+      FROM lesson_completions lc
+      INNER JOIN lessons l ON l.id = lc.lesson_id
+      WHERE lc.user_id = ? AND l.course_id = ?
+    `,
+    [userId, courseId]
+  );
+
+  const totalLessons = Number(totalRow?.total || 0);
+  const completedLessons = Number(completedRow?.total || 0);
+
+  return {
+    totalLessons,
+    completedLessons,
+    completed: totalLessons > 0 && completedLessons >= totalLessons,
+    percent: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+  };
+}
+
+async function getCertificate(userId, courseId) {
+  const row = await get(
+    `
+      SELECT
+        c.id,
+        c.user_id,
+        c.course_id,
+        c.certificate_code,
+        c.issued_at,
+        u.nome AS user_name,
+        course.title AS course_title
+      FROM certificates c
+      INNER JOIN users u ON u.id = c.user_id
+      INNER JOIN courses course ON course.id = c.course_id
+      WHERE c.user_id = ? AND c.course_id = ?
+    `,
+    [userId, courseId]
+  );
+
+  return mapCertificate(row);
+}
+
+async function issueCertificate(userId, courseId) {
+  const existing = await getCertificate(userId, courseId);
+  if (existing) {
+    return existing;
+  }
+
+  const certificateCode = `CERT-${courseId}-${userId}-${Date.now()}`;
+  await run(
+    `
+      INSERT INTO certificates (user_id, course_id, certificate_code, issued_at)
+      VALUES (?, ?, ?, ?)
+    `,
+    [userId, courseId, certificateCode, new Date().toISOString()]
+  );
+
+  return getCertificate(userId, courseId);
+}
+
+async function saveCourseEvaluation(userId, courseId, { rating, answersJson, comment }) {
+  await run(
+    `
+      INSERT INTO course_evaluations (user_id, course_id, rating, answers_json, comment, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, course_id) DO UPDATE SET
+        rating = excluded.rating,
+        answers_json = excluded.answers_json,
+        comment = excluded.comment,
+        created_at = excluded.created_at
+    `,
+    [userId, courseId, rating, answersJson || null, comment || "", new Date().toISOString()]
+  );
+
+  return getCourseEvaluation(userId, courseId);
+}
+
+async function getCourseEvaluation(userId, courseId) {
+  const row = await get(
+    `
+      SELECT id, user_id, course_id, rating, answers_json, comment, created_at
+      FROM course_evaluations
+      WHERE user_id = ? AND course_id = ?
+    `,
+    [userId, courseId]
+  );
+
+  return mapCourseEvaluation(row);
+}
+
+async function getAdminStats() {
+  const totals = await get(
+    `
+      SELECT
+        (SELECT COUNT(*) FROM users WHERE is_admin = 0) AS total_students,
+        (SELECT COUNT(*) FROM enrollments) AS total_enrollments,
+        (SELECT COUNT(*) FROM certificates) AS total_certificates
+    `
+  );
+
+  const courses = await all(
+    `
+      SELECT
+        c.id,
+        c.title,
+        COUNT(DISTINCT e.user_id) AS enrolled_students,
+        COUNT(DISTINCT cert.user_id) AS certified_students,
+        ROUND(AVG(ev.rating), 1) AS average_rating
+      FROM courses c
+      LEFT JOIN enrollments e ON e.course_id = c.id
+      LEFT JOIN certificates cert ON cert.course_id = c.id
+      LEFT JOIN course_evaluations ev ON ev.course_id = c.id
+      GROUP BY c.id
+      ORDER BY c.id ASC
+    `
+  );
+
+  return {
+    totals: {
+      totalStudents: Number(totals?.total_students || 0),
+      totalEnrollments: Number(totals?.total_enrollments || 0),
+      totalCertificates: Number(totals?.total_certificates || 0)
+    },
+    courses: courses.map((course) => ({
+      id: course.id,
+      title: course.title,
+      enrolledStudents: Number(course.enrolled_students || 0),
+      certifiedStudents: Number(course.certified_students || 0),
+      averageRating: course.average_rating !== null ? Number(course.average_rating) : null
+    }))
+  };
+}
+
+async function listAdminEvaluations() {
+  const rows = await all(
+    `
+      SELECT
+        ev.id,
+        ev.user_id,
+        ev.course_id,
+        ev.rating,
+        ev.answers_json,
+        ev.comment,
+        ev.created_at,
+        u.nome AS user_name,
+        u.email AS user_email,
+        c.title AS course_title
+      FROM course_evaluations ev
+      INNER JOIN users u ON u.id = ev.user_id
+      INNER JOIN courses c ON c.id = ev.course_id
+      ORDER BY ev.created_at DESC, ev.id DESC
+    `
+  );
+
+  return rows.map(mapCourseEvaluation);
+}
+
+async function seedCoursesAndLessons() {
+  const row = await get("SELECT COUNT(*) AS total FROM courses");
+  if (row && Number(row.total) > 0) {
+    return;
+  }
+
+  const sampleCourses = [
+    {
+      title: "Fundamentos de Node.js",
+      description: "Aprenda a criar servidores, rotas e APIs modernas com Node.js e Express.",
+      priceCents: 9700,
+      lessons: [
+        {
+          title: "Boas-vindas ao curso",
+          content: "Nesta aula voce conhece a estrutura do projeto, o papel do servidor e como organizar a base do portal."
+        },
+        {
+          title: "Rotas e middlewares",
+          content: "Aqui voce aprende a criar rotas, reaproveitar middlewares e proteger pontos criticos da aplicacao."
+        },
+        {
+          title: "Autenticacao e sessoes",
+          content: "Nesta etapa voce conecta login, cookies e JWT para construir uma experiencia de usuario segura."
+        }
+      ]
+    },
+    {
+      title: "SQLite para projetos web",
+      description: "Use um banco leve e pratico para armazenar usuarios, cursos, aulas e matriculas.",
+      priceCents: 8700,
+      lessons: [
+        {
+          title: "Modelando tabelas",
+          content: "Vamos definir entidades, relacionamentos e indices para manter o portal rapido e confiavel."
+        },
+        {
+          title: "Consultas do dia a dia",
+          content: "Voce vai montar consultas de listagem, joins e filtros para alimentar dashboard e catalogo."
+        }
+      ]
+    },
+    {
+      title: "Portal do aluno na pratica",
+      description: "Construa um fluxo completo com dashboard, acesso bloqueado e pagina de aula.",
+      priceCents: 11700,
+      lessons: [
+        {
+          title: "Desenhando a jornada do aluno",
+          content: "Mapeie a experiencia desde a descoberta do curso ate o consumo do conteudo autenticado."
+        },
+        {
+          title: "Protegendo conteudo premium",
+          content: "Aprenda a liberar aulas apenas para usuarios matriculados e sinalizar restricoes no frontend."
+        },
+        {
+          title: "Finalizando a experiencia",
+          content: "Feche o portal com feedback visual, navegacao clara e pontos de expansao para pagamentos."
+        }
+      ]
+    }
+  ];
+
+  for (const course of sampleCourses) {
+    const createdCourse = await createCourse({
+      title: course.title,
+      description: course.description,
+      priceCents: course.priceCents
+    });
+
+    for (const [index, lesson] of course.lessons.entries()) {
+      await createLesson({
+        courseId: createdCourse.id,
+        title: lesson.title,
+        content: lesson.content,
+        position: index + 1
+      });
+    }
+  }
+}
+
+module.exports = {
+  initDatabase,
+  createUser,
+  createCourse,
+  createLesson,
+  updateLessonAssets,
+  updateCourse,
+  deleteCourse,
+  updateLesson,
+  deleteLesson,
+  createOrder,
+  getOrderById,
+  listOrdersByUser,
+  listPendingOrders,
+  approveOrder,
+  approveOrdersByGroup,
+  listOrdersByGroupReference,
+  createPromoCode,
+  listPromoCodes,
+  findPromoCodeByCode,
+  countPromoCodeRedemptions,
+  deletePromoCode,
+  completeLesson,
+  listCompletedLessonIdsByCourse,
+  getCourseProgress,
+  issueCertificate,
+  getCertificate,
+  saveCourseEvaluation,
+  getCourseEvaluation,
+  getAdminStats,
+  listAdminEvaluations,
+  findUserByEmail,
+  findUserById,
+  listCourses,
+  listDashboardCourses,
+  enrollUserInCourse,
+  userHasEnrollment,
+  createCourseMaterial,
+  listCourseMaterials,
+  getCourseMaterialById,
+  deleteCourseMaterial,
+  getCourseById,
+  listLessonsByCourse,
+  getLessonById
+};

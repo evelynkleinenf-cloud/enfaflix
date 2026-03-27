@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enfaflix | Cadastro</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="cadastro">
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand brand-with-logo">
+          <img src="/logo.png" alt="Logo Enfaflix" class="brand-logo" />
+          <span>Enfaflix</span>
+        </a>
+        <nav class="site-nav" data-site-nav></nav>
+      </div>
+    </header>
+
+    <main class="container page-center">
+      <section class="form-card">
+        <h1>Criar conta</h1>
+        <p>Preencha seus dados para cadastrar um novo usuário.</p>
+
+        <form data-form-type="cadastro" class="form">
+          <label for="cadastro-nome">Nome</label>
+          <input id="cadastro-nome" name="nome" type="text" placeholder="Seu nome" required />
+
+          <label for="cadastro-email">E-mail</label>
+          <input id="cadastro-email" name="email" type="email" placeholder="voc@email.com" required />
+
+          <label for="cadastro-senha">Senha</label>
+          <input id="cadastro-senha" name="senha" type="password" placeholder="Crie uma senha" required />
+
+          <button type="submit" class="button primary full">Cadastrar</button>
+          <p class="form-message" aria-live="polite"></p>
+        </form>
+
+        <p class="form-helper">
+          Já possui conta <a href="/login">Entrar agora</a>.
+        </p>
+      </section>
+    </main>
+
+    <script src="/script.js"></script>
+  </body>
+</html>

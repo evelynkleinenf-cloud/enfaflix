@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enfaflix | Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="dashboard">
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand brand-with-logo">
+          <img src="/logo.png" alt="Logo Enfaflix" class="brand-logo" />
+          <span>Enfaflix</span>
+        </a>
+        <nav class="site-nav" data-site-nav></nav>
+      </div>
+    </header>
+
+    <main class="container portal-shell">
+      <section class="portal-hero">
+        <div>
+          <span class="eyebrow">Área do aluno</span>
+          <h1 id="dashboard-title">Carregando seu portal...</h1>
+          <p id="dashboard-subtitle">Buscando cursos matrculados e seu progresso inicial.</p>
+        </div>
+        <button id="logout-button" class="button secondary" type="button">Sair</button>
+      </section>
+
+      <section class="portal-grid">
+        <article class="dashboard-stat">
+          <span>Cursos ativos</span>
+          <strong id="dashboard-count">0</strong>
+        </article>
+        <article class="dashboard-stat">
+          <span>Status</span>
+          <strong>Conteúdo premium liberado por matrícula</strong>
+        </article>
+        <article class="dashboard-stat">
+          <span>Cursos concluidos</span>
+          <strong id="dashboard-completed-count">0</strong>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Seus cursos</h2>
+          <a class="button secondary" href="/cursos">Explorar catálogo</a>
+        </div>
+        <div id="dashboard-courses" class="card-grid"></div>
+        <p id="dashboard-empty" class="empty-state hidden">
+          Você ainda não comprou nenhum curso. Escolha um curso no catálogo para liberar as aulas.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Seus pedidos</h2>
+        </div>
+        <div id="dashboard-orders" class="card-grid"></div>
+      </section>
+    </main>
+
+    <script src="/script.js"></script>
+  </body>
+</html>

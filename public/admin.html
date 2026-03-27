@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enfaflix | Gestão</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="admin">
+    <header class="site-header">
+      <div class="container nav">
+        <a href="/" class="brand brand-with-logo">
+          <img src="/logo.png" alt="Logo Enfaflix" class="brand-logo" />
+          <span>Enfaflix</span>
+        </a>
+        <nav class="site-nav" data-site-nav></nav>
+      </div>
+    </header>
+
+    <main class="container portal-shell">
+      <section class="portal-hero">
+        <div>
+          <span class="eyebrow">Estrutura EAD</span>
+          <h1>Cadastro local de cursos e upload local das aulas</h1>
+          <p>Crie cursos, adicione aulas e envie video, PDF e arquivo de texto para armazenamento local.</p>
+        </div>
+      </section>
+
+      <section class="admin-layout">
+        <article class="form-card">
+          <h2>Novo curso</h2>
+          <form id="course-form" class="form">
+            <label for="course-title">Título</label>
+            <input id="course-title" name="title" type="text" placeholder="Curso de Node.js" required />
+
+            <label for="course-description">Descrição</label>
+            <textarea id="course-description" name="description" rows="5" placeholder="Descreva o curso"></textarea>
+
+            <label for="course-price">Preço (R$)</label>
+            <input id="course-price" name="price" type="number" min="0" step="0.01" placeholder="97.00" required />
+
+            <button type="submit" class="button primary full">Criar curso</button>
+            <p id="course-form-message" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <article class="form-card">
+            <h2>Nova aula</h2>
+          <form id="lesson-form" class="form" enctype="multipart/form-data">
+            <label for="lesson-course">Curso</label>
+            <select id="lesson-course" name="courseId" required></select>
+
+            <label for="lesson-title-input">Título da aula</label>
+            <input id="lesson-title-input" name="title" type="text" placeholder="Aula 1 - Introdu??o" required />
+
+            <label for="lesson-position">Posição</label>
+            <input id="lesson-position" name="position" type="number" min="1" value="1" />
+
+            <label for="lesson-content-input">Texto da aula</label>
+            <textarea id="lesson-content-input" name="content" rows="6" placeholder="Escreva o texto principal da aula"></textarea>
+
+            <label for="lesson-youtube-url">Link do vídeo no YouTube</label>
+            <input id="lesson-youtube-url" name="youtubeUrl" type="url" placeholder="https://www.youtube.com/watchv=..." />
+
+            <label for="lesson-pdf">PDF</label>
+            <input id="lesson-pdf" name="pdf" type="file" accept="application/pdf" />
+
+            <label for="lesson-text-file">Arquivo de texto</label>
+            <input id="lesson-text-file" name="textFile" type="file" accept=".txt,.md,text/plain,text/markdown" />
+
+            <button type="submit" class="button primary full">Criar aula</button>
+            <p id="lesson-form-message" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+      </section>
+
+      <section class="admin-layout">
+        <article class="form-card">
+          <h2>Liberação manual</h2>
+          <form id="release-form" class="form">
+            <label for="release-email">E-mail do aluno</label>
+            <input id="release-email" name="email" type="email" placeholder="aluno@email.com" required />
+
+            <label for="release-course">Curso</label>
+            <select id="release-course" name="courseId" required></select>
+
+            <button type="submit" class="button primary full">Liberar curso e avisar por e-mail</button>
+            <p id="release-form-message" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <article class="form-card">
+          <h2>Materiais complementares</h2>
+          <form id="material-form" class="form" enctype="multipart/form-data">
+            <label for="material-course">Curso</label>
+            <select id="material-course" name="courseId" required></select>
+
+            <label for="material-title">Título do material</label>
+            <input id="material-title" name="title" type="text" placeholder="Checklist de revisão" required />
+
+            <label for="material-file">Arquivo</label>
+            <input id="material-file" name="materialFile" type="file" required />
+
+            <button type="submit" class="button primary full">Enviar material complementar</button>
+            <p id="material-form-message" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <article class="form-card">
+          <h2>Códigos promocionais</h2>
+          <form id="promo-form" class="form">
+            <label for="promo-title">Nome da promoção</label>
+            <input id="promo-title" name="title" type="text" placeholder="Combo Emergências Essenciais" required />
+
+            <label for="promo-code">Código</label>
+            <input id="promo-code" name="code" type="text" placeholder="ENFA10" required />
+
+            <label for="promo-description">Descrição</label>
+            <textarea id="promo-description" name="description" rows="4" placeholder="Desconto especial para cursos casados da campanha atual."></textarea>
+
+            <label for="promo-type">Tipo de desconto</label>
+            <select id="promo-type" name="discountType">
+              <option value="percent">Percentual</option>
+              <option value="fixed">Valor fixo</option>
+            </select>
+
+            <label for="promo-value">Valor do desconto</label>
+            <input id="promo-value" name="discountValue" type="number" min="1" step="1" placeholder="10" required />
+
+            <label for="promo-min-courses">Quantidade mínima de cursos</label>
+            <input id="promo-min-courses" name="minCourses" type="number" min="1" step="1" value="1" required />
+
+            <label for="promo-max-redemptions">Limite de alunos</label>
+            <input id="promo-max-redemptions" name="maxRedemptions" type="number" min="1" step="1" placeholder="Ex: 30" />
+
+            <label for="promo-expires-at">Vlidade até</label>
+            <input id="promo-expires-at" name="expiresAt" type="datetime-local" />
+
+            <div>
+              <label>Cursos vinculados da promoção</label>
+              <p class="form-helper">Se selecionar cursos aqui, o desconto só vale quando esses cursos estiverem no combo.</p>
+              <div id="promo-course-options" class="checkbox-grid"></div>
+            </div>
+
+            <button type="submit" class="button primary full">Criar código promocional</button>
+            <p id="promo-form-message" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Visão geral</h2>
+        </div>
+        <div id="admin-stats" class="portal-grid"></div>
+        <div class="section-head">
+          <h2>Matrículas por curso</h2>
+        </div>
+        <div id="admin-course-stats" class="card-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Cupons ativos</h2>
+        </div>
+        <div id="admin-promo-codes-list" class="card-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Avaliações dos alunos</h2>
+        </div>
+        <div id="admin-evaluations-list" class="card-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Pedidos pendentes</h2>
+        </div>
+        <div id="admin-orders-list" class="card-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Cursos locais</h2>
+          <a class="button secondary" href="/cursos">Ver catálogo</a>
+        </div>
+        <p class="form-helper">Use os botões de editar e excluir para manter o catálogo e as aulas organizados.</p>
+        <div id="admin-courses-list" class="card-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-head">
+          <h2>Materiais cadastrados</h2>
+        </div>
+        <div id="admin-materials-list" class="card-grid"></div>
+      </section>
+    </main>
+
+    <script src="/script.js"></script>
+  </body>
+</html>
