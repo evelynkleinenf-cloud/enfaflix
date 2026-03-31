@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
@@ -21,8 +21,8 @@
       <section class="portal-hero">
         <div>
           <span class="eyebrow">Estrutura EAD</span>
-          <h1>Cadastro local de cursos e upload local das aulas</h1>
-          <p>Crie cursos, adicione aulas e envie video, PDF e arquivo de texto para armazenamento local.</p>
+          <h1>Gestão de cursos, aulas, materiais e certificados</h1>
+          <p>Crie cursos, organize aulas, libere acessos e acompanhe a evolução dos alunos em um só lugar.</p>
         </div>
       </section>
 
@@ -31,7 +31,7 @@
           <h2>Novo curso</h2>
           <form id="course-form" class="form">
             <label for="course-title">Título</label>
-            <input id="course-title" name="title" type="text" placeholder="Curso de Node.js" required />
+            <input id="course-title" name="title" type="text" placeholder="Curso de Sinais Vitais" required />
 
             <label for="course-description">Descrição</label>
             <textarea id="course-description" name="description" rows="5" placeholder="Descreva o curso"></textarea>
@@ -45,13 +45,13 @@
         </article>
 
         <article class="form-card">
-            <h2>Nova aula</h2>
+          <h2>Nova aula</h2>
           <form id="lesson-form" class="form" enctype="multipart/form-data">
             <label for="lesson-course">Curso</label>
             <select id="lesson-course" name="courseId" required></select>
 
             <label for="lesson-title-input">Título da aula</label>
-            <input id="lesson-title-input" name="title" type="text" placeholder="Aula 1 - Introdu??o" required />
+            <input id="lesson-title-input" name="title" type="text" placeholder="Aula 1 - Introdução" required />
 
             <label for="lesson-position">Posição</label>
             <input id="lesson-position" name="position" type="number" min="1" value="1" />
@@ -60,7 +60,7 @@
             <textarea id="lesson-content-input" name="content" rows="6" placeholder="Escreva o texto principal da aula"></textarea>
 
             <label for="lesson-youtube-url">Link do vídeo no YouTube</label>
-            <input id="lesson-youtube-url" name="youtubeUrl" type="url" placeholder="https://www.youtube.com/watchv=..." />
+            <input id="lesson-youtube-url" name="youtubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." />
 
             <label for="lesson-pdf">PDF</label>
             <input id="lesson-pdf" name="pdf" type="file" accept="application/pdf" />
@@ -88,6 +88,21 @@
 
             <button type="submit" class="button primary full">Liberar curso e avisar por e-mail</button>
             <p id="release-form-message" class="form-message" aria-live="polite"></p>
+          </form>
+        </article>
+
+        <article class="form-card">
+          <h2>Certificado manual</h2>
+          <form id="certificate-release-form" class="form">
+            <label for="certificate-release-email">E-mail do aluno</label>
+            <input id="certificate-release-email" name="email" type="email" placeholder="aluno@email.com" required />
+
+            <label for="certificate-release-course">Curso</label>
+            <select id="certificate-release-course" name="courseId" required></select>
+
+            <button type="submit" class="button primary full">Liberar certificado manualmente</button>
+            <p class="form-helper">Use esta opção quando quiser liberar o certificado sem depender da avaliação automática do curso.</p>
+            <p id="certificate-release-message" class="form-message" aria-live="polite"></p>
           </form>
         </article>
 
@@ -133,9 +148,9 @@
             <input id="promo-min-courses" name="minCourses" type="number" min="1" step="1" value="1" required />
 
             <label for="promo-max-redemptions">Limite de alunos</label>
-            <input id="promo-max-redemptions" name="maxRedemptions" type="number" min="1" step="1" placeholder="Ex: 30" />
+            <input id="promo-max-redemptions" name="maxRedemptions" type="number" min="1" step="1" placeholder="Ex.: 30" />
 
-            <label for="promo-expires-at">Vlidade até</label>
+            <label for="promo-expires-at">Validade até</label>
             <input id="promo-expires-at" name="expiresAt" type="datetime-local" />
 
             <div>

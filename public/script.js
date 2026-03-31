@@ -336,7 +336,7 @@ async function loadCoursesPage() {
               ${promotion.remainingRedemptions !== null ? `<p><strong>Restantes:</strong> ${promotion.remainingRedemptions} aluno(s)</p>` : ""}
             </article>
           `).join("")
-          : "<p class='empty-state'>Nenhuma promoção especial ativa no momento.</p>";
+          : "<p class='empty-state'>Nenhuma avalia\u00e7\u00e3o enviada ainda.</p>";
       }
     }
 
@@ -360,7 +360,7 @@ async function loadCoursesPage() {
     if (summary) {
       summary.textContent = selectedCourses.length >= 2
         ? "Seu combo já recebe 10% de desconto automático no checkout. Você ainda pode aplicar um cupom promocional."
-        : "Selecione 2 ou mais cursos para ganhar 10% de desconto autom?tico no pedido.";
+        : "Selecione 2 ou mais cursos para ganhar 10% de desconto automático no pedido.";
     }
 
     if (checkoutButton) {
@@ -433,7 +433,7 @@ async function loadDashboardPage() {
   }
 
   if (!response.ok || !result) {
-    title.textContent = "N?o foi poss?vel carregar seu dashboard.";
+    title.textContent = "Não foi possível carregar seu dashboard.";
     subtitle.textContent = "Tente novamente em alguns instantes.";
     return;
   }
@@ -488,7 +488,7 @@ async function loadDashboardPage() {
           <article class="course-card">
             <span class="course-meta">${order.status === "approved" ? "Aprovado" : "Pendente"}</span>
             <h3>${order.courseTitle}</h3>
-            <p>Refer?ncia: ${order.reference}</p>
+            <p>Referência: ${order.reference}</p>
             ${order.groupReference ? `<p>Pedido em grupo: ${order.groupReference}</p>` : ""}
             <p>Valor final: ${formatCurrency(order.amountCents || 0)}</p>
             ${order.discountCents ? `<p>Desconto aplicado: ${formatCurrency(order.discountCents)}</p>` : ""}
@@ -536,7 +536,7 @@ async function loadLessonPage() {
 
   if (response.status === 403 && result) {
     title.textContent = "Acesso restrito";
-    course.textContent = "Esta aula faz parte de um conte?do premium.";
+    course.textContent = "Esta aula faz parte de um conteúdo premium.";
     lockPanel.classList.remove("hidden");
     lockMessage.textContent = result.message;
     lockLink.href = "/cursos";
@@ -544,8 +544,8 @@ async function loadLessonPage() {
   }
 
   if (!response.ok || !result) {
-    title.textContent = "Aula indispon?vel";
-    course.textContent = "N?o foi poss?vel carregar este conte?do.";
+    title.textContent = "Aula indisponível";
+    course.textContent = "Não foi possível carregar este conteúdo.";
     return;
   }
 
@@ -602,7 +602,7 @@ async function loadLessonPage() {
       completeButton.disabled = false;
 
       if (!completeResult.response.ok || !completeResult.result) {
-        progressMessage.textContent = completeResult.result.message || "N?o foi poss?vel concluir a aula.";
+        progressMessage.textContent = completeResult.result.message || "Não foi possível concluir a aula.";
         return;
       }
 
@@ -629,13 +629,13 @@ async function loadLessonPage() {
   }
 
   if (result.evaluation && evaluationMessage) {
-    evaluationMessage.textContent = "Avalia��o do curso j� enviada. Voc� pode atualizar sua resposta.";
+    evaluationMessage.textContent = "Avalia\u00e7\u00e3o do curso j\u00e1 enviada. Voc\u00ea pode atualizar sua resposta.";
   }
 
   if (evaluationForm && evaluationMessage) {
     evaluationForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      evaluationMessage.textContent = "Enviando avalia��o do curso...";
+      evaluationMessage.textContent = "Enviando avalia\u00e7\u00e3o do curso...";
 
       const formData = new FormData(evaluationForm);
       const payload = {
@@ -656,7 +656,7 @@ async function loadLessonPage() {
       });
 
       if (!evaluationResult.response.ok || !evaluationResult.result) {
-        evaluationMessage.textContent = evaluationResult.result.message || "N�o foi poss�vel enviar a avalia��o do curso.";
+        evaluationMessage.textContent = evaluationResult.result.message || "N\u00e3o foi poss\u00edvel enviar a avalia\u00e7\u00e3o do curso.";
         return;
       }
 
@@ -678,6 +678,9 @@ async function loadAdminPage() {
   const releaseForm = document.querySelector("#release-form");
   const releaseMessage = document.querySelector("#release-form-message");
   const releaseCourseSelect = document.querySelector("#release-course");
+  const certificateReleaseForm = document.querySelector("#certificate-release-form");
+  const certificateReleaseMessage = document.querySelector("#certificate-release-message");
+  const certificateReleaseCourseSelect = document.querySelector("#certificate-release-course");
   const list = document.querySelector("#admin-courses-list");
   const ordersList = document.querySelector("#admin-orders-list");
   const statsGrid = document.querySelector("#admin-stats");
@@ -692,7 +695,7 @@ async function loadAdminPage() {
   const promoCodesList = document.querySelector("#admin-promo-codes-list");
   const promoCourseOptions = document.querySelector("#promo-course-options");
 
-  if (!courseForm || !lessonForm || !courseMessage || !lessonMessage || !courseSelect || !list || !releaseForm || !releaseMessage || !releaseCourseSelect || !ordersList || !statsGrid || !courseStatsList || !evaluationsList || !materialForm || !materialMessage || !materialCourseSelect || !materialsList || !promoForm || !promoMessage || !promoCodesList || !promoCourseOptions) {
+  if (!courseForm || !lessonForm || !courseMessage || !lessonMessage || !courseSelect || !list || !releaseForm || !releaseMessage || !releaseCourseSelect || !certificateReleaseForm || !certificateReleaseMessage || !certificateReleaseCourseSelect || !ordersList || !statsGrid || !courseStatsList || !evaluationsList || !materialForm || !materialMessage || !materialCourseSelect || !materialsList || !promoForm || !promoMessage || !promoCodesList || !promoCourseOptions) {
     return;
   }
 
@@ -710,7 +713,7 @@ async function loadAdminPage() {
     }
 
     if (!response.ok || !result) {
-      list.innerHTML = "<p class='empty-state'>N?o foi poss?vel carregar os cursos locais.</p>";
+      list.innerHTML = "<p class='empty-state'>Não foi possível carregar os cursos locais.</p>";
       return;
     }
 
@@ -720,6 +723,9 @@ async function loadAdminPage() {
       .map((course) => `<option value="${course.id}">${course.title}</option>`)
       .join("");
     releaseCourseSelect.innerHTML = result.courses
+      .map((course) => `<option value="${course.id}">${course.title}</option>`)
+      .join("");
+    certificateReleaseCourseSelect.innerHTML = result.courses
       .map((course) => `<option value="${course.id}">${course.title}</option>`)
       .join("");
     materialCourseSelect.innerHTML = result.courses
@@ -749,7 +755,7 @@ async function loadAdminPage() {
       <article class="course-card">
         <span class="course-meta">${course.lessonsCount} aulas</span>
         <h3>${course.title}</h3>
-        <p>${course.description || "Curso sem descri??o."}</p>
+        <p>${course.description || "Curso sem descrição."}</p>
         <p>${((course.priceCents || 0) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</p>
         <div class="course-actions">
           <button class="button secondary" type="button" data-edit-course="${course.id}" data-course-title="${encodeURIComponent(course.title)}" data-course-description="${encodeURIComponent(course.description || "")}" data-course-price="${((course.priceCents || 0) / 100).toFixed(2)}">Editar curso</button>
@@ -760,7 +766,7 @@ async function loadAdminPage() {
             <div class="admin-lesson-item">
               <strong>Aula ${lesson.position}: ${lesson.title}</strong>
               <div class="admin-lesson-meta">
-                ${lesson.youtubeUrl ? "YouTube" : lesson.hasVideo ? "V?deo local" : "Sem v?deo"} ?
+                ${lesson.youtubeUrl ? "YouTube" : lesson.hasVideo ? "Vídeo local" : "Sem vídeo"} ?
                 ${lesson.hasPdf ? "PDF" : "Sem PDF"} ?
                 ${lesson.hasTextFile ? "Texto" : "Sem arquivo de texto"}
               </div>
@@ -801,8 +807,8 @@ async function loadAdminPage() {
           return;
         }
 
-        const newDescription = window.prompt("Nova descri??o do curso:", currentDescription);
-        const newPrice = window.prompt("Novo pre?o do curso (R$):", currentPrice);
+        const newDescription = window.prompt("Nova descrição do curso:", currentDescription);
+        const newPrice = window.prompt("Novo preço do curso (R$):", currentPrice);
 
         const update = await fetchJson(`/api/admin/courses/${courseId}`, {
           method: "PUT",
@@ -817,7 +823,7 @@ async function loadAdminPage() {
         });
 
         if (!update.response.ok) {
-          courseMessage.textContent = update.result.message || "N?o foi poss?vel atualizar o curso.";
+          courseMessage.textContent = update.result.message || "Não foi possível atualizar o curso.";
           return;
         }
 
@@ -841,7 +847,7 @@ async function loadAdminPage() {
         });
 
         if (!deletion.response.ok) {
-          courseMessage.textContent = deletion.result.message || "N?o foi poss?vel excluir o curso.";
+          courseMessage.textContent = deletion.result.message || "Não foi possível excluir o curso.";
           return;
         }
 
@@ -882,7 +888,7 @@ async function loadAdminPage() {
         });
 
         if (!update.response.ok) {
-          lessonMessage.textContent = update.result.message || "N?o foi poss?vel atualizar a aula.";
+          lessonMessage.textContent = update.result.message || "Não foi possível atualizar a aula.";
           return;
         }
 
@@ -906,7 +912,7 @@ async function loadAdminPage() {
         });
 
         if (!deletion.response.ok) {
-          lessonMessage.textContent = deletion.result.message || "N?o foi poss?vel excluir a aula.";
+          lessonMessage.textContent = deletion.result.message || "Não foi possível excluir a aula.";
           return;
         }
 
@@ -945,7 +951,7 @@ async function loadAdminPage() {
             <span class="course-meta">Pendente</span>
             <h3>${order.courseTitle}</h3>
             <p>Aluno: ${order.userName} (${order.userEmail})</p>
-            <p>Refer?ncia: ${order.reference}</p>
+            <p>Referência: ${order.reference}</p>
             ${order.groupReference ? `<p>Grupo: ${order.groupReference}</p>` : ""}
             <p>Valor final: ${formatCurrency(order.amountCents || 0)}</p>
             ${order.originalAmountCents ? `<p>Valor original: ${formatCurrency(order.originalAmountCents)}</p>` : ""}
@@ -961,7 +967,7 @@ async function loadAdminPage() {
       ordersList.querySelectorAll("[data-approve-order]").forEach((button) => {
         button.addEventListener("click", async () => {
           const orderId = button.dataset.approveOrder;
-          const paymentNote = window.prompt("Observa??o opcional do pagamento:", "") || "";
+          const paymentNote = window.prompt("Observação opcional do pagamento:", "") || "";
           const approval = await fetchJson(`/api/admin/orders/${orderId}/approve`, {
             method: "POST",
             headers: {
@@ -1021,7 +1027,7 @@ async function loadAdminPage() {
             <p><strong>Código:</strong> ${promoCode.code}</p>
             ${promoCode.description ? `<p>${promoCode.description}</p>` : ""}
             <p><strong>Desconto:</strong> ${promoCode.discountType === "percent" ? `${promoCode.discountValue}%` : formatCurrency(promoCode.discountValue)}</p>
-            <p><strong>M?nimo de cursos:</strong> ${promoCode.minCourses || 1}</p>
+            <p><strong>Mínimo de cursos:</strong> ${promoCode.minCourses || 1}</p>
             <p><strong>Cursos casados:</strong> ${promoCode.eligibleCourseIds.length ? promoCode.eligibleCourseIds.map((courseId) => courseTitleById.get(courseId) || `Curso ${courseId}`).join(", ") : "Todos os cursos"}</p>
             <p><strong>Limite de alunos:</strong> ${promoCode.maxRedemptions ? `${promoCode.redemptionsCount || 0}/${promoCode.maxRedemptions}` : "Sem limite"}</p>
             <p><strong>Validade:</strong> ${promoCode.expiresAt ? new Date(promoCode.expiresAt).toLocaleString("pt-BR") : "Sem data limite"}</p>
@@ -1062,10 +1068,10 @@ async function loadAdminPage() {
             <span class="course-meta">Nota ${evaluation.rating}/5</span>
             <h3>${evaluation.courseTitle}</h3>
             <p>${evaluation.userName} (${evaluation.userEmail})</p>
-            <p>${evaluation.comment || "Sem coment�rio final."}</p><p><strong>Ponto mais valioso:</strong> ${(() => { try { const answers = evaluation.answersJson ? JSON.parse(evaluation.answersJson) : {}; return answers.learning || "N�o informado."; } catch (error) { return "N�o informado."; } })()}</p><p><strong>O que melhorar:</strong> ${(() => { try { const answers = evaluation.answersJson ? JSON.parse(evaluation.answersJson) : {}; return answers.improve || "N�o informado."; } catch (error) { return "N�o informado."; } })()}</p>
+            <p>${evaluation.comment || "Sem coment\u00e1rio final."}</p><p><strong>Ponto mais valioso:</strong> ${(() => { try { const answers = evaluation.answersJson ? JSON.parse(evaluation.answersJson) : {}; return answers.learning || "N\u00e3o informado."; } catch (error) { return "N\u00e3o informado."; } })()}</p><p><strong>O que melhorar:</strong> ${(() => { try { const answers = evaluation.answersJson ? JSON.parse(evaluation.answersJson) : {}; return answers.improve || "N\u00e3o informado."; } catch (error) { return "N\u00e3o informado."; } })()}</p>
           </article>
         `).join("")
-        : "<p class='empty-state'>Nenhuma avalia??o enviada ainda.</p>";
+        : "<p class='empty-state'>Nenhuma avaliação enviada ainda.</p>";
     }
   };
 
@@ -1099,7 +1105,7 @@ async function loadAdminPage() {
     }
 
     if (!response.ok || !result) {
-      courseMessage.textContent = result.message || "N?o foi poss?vel criar o curso.";
+      courseMessage.textContent = result.message || "Não foi possível criar o curso.";
       return;
     }
 
@@ -1130,7 +1136,7 @@ async function loadAdminPage() {
     }
 
     if (!response.ok) {
-      lessonMessage.textContent = result.message || "N?o foi poss?vel criar a aula.";
+      lessonMessage.textContent = result.message || "Não foi possível criar a aula.";
       return;
     }
 
@@ -1193,7 +1199,7 @@ async function loadAdminPage() {
     }
 
     if (!response.ok || !result) {
-      releaseMessage.textContent = result.message || "N?o foi poss?vel liberar o curso.";
+      releaseMessage.textContent = result.message || "Não foi possível liberar o curso.";
       return;
     }
 
@@ -1201,9 +1207,46 @@ async function loadAdminPage() {
     releaseForm.reset();
   });
 
+  certificateReleaseForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    certificateReleaseMessage.textContent = "Liberando certificado...";
+
+    const payload = {
+      email: document.querySelector("#certificate-release-email").value || "",
+      courseId: certificateReleaseCourseSelect.value
+    };
+
+    const { response, result } = await fetchJson("/api/admin/release-certificate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (response.status === 401) {
+      window.location.href = "/login";
+      return;
+    }
+
+    if (response.status === 403) {
+      window.location.href = "/";
+      return;
+    }
+
+    if (!response.ok || !result) {
+      certificateReleaseMessage.textContent = result.message || "Não foi possível liberar o certificado.";
+      return;
+    }
+
+    certificateReleaseMessage.textContent = result.message;
+    certificateReleaseForm.reset();
+    await fillCourses();
+  });
+
   promoForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    promoMessage.textContent = "Criando c?digo promocional...";
+    promoMessage.textContent = "Criando código promocional...";
 
     const formData = new FormData(promoForm);
     const payload = {
@@ -1227,7 +1270,7 @@ async function loadAdminPage() {
     });
 
     if (!response.ok || !result) {
-      promoMessage.textContent = result.message || "N?o foi poss?vel criar o c?digo.";
+      promoMessage.textContent = result.message || "Não foi possível criar o código.";
       return;
     }
 
@@ -1256,7 +1299,7 @@ async function loadCertificatePage() {
   }
 
   if (!response.ok || !result) {
-    student.textContent = "Certificado indispon?vel";
+    student.textContent = "Certificado indisponível";
     return;
   }
 
@@ -1294,7 +1337,7 @@ async function loadCheckoutPage() {
 
   if (courseIds.length === 0) {
     title.textContent = "Nenhum curso selecionado.";
-    subtitle.textContent = "Volte ao cat?logo para montar seu pedido.";
+    subtitle.textContent = "Volte ao catálogo para montar seu pedido.";
     createOrderButton.disabled = true;
     return;
   }
@@ -1312,7 +1355,7 @@ async function loadCheckoutPage() {
     }
 
     if (!response.ok || !result) {
-      title.textContent = "N?o foi poss?vel carregar o checkout.";
+      title.textContent = "Não foi possível carregar o checkout.";
       subtitle.textContent = result.message || "Tente novamente em alguns instantes.";
       createOrderButton.disabled = true;
       return null;
@@ -1321,7 +1364,7 @@ async function loadCheckoutPage() {
     title.textContent = result.summary.courses.length > 1
       ? "Comprar combo de cursos"
       : `Comprar ${result.summary.courses[0].title}`;
-    subtitle.textContent = "Gere seu pedido, pague por PIX e aguarde a libera??o manual.";
+    subtitle.textContent = "Gere seu pedido, pague por PIX e aguarde a liberação manual.";
     description.textContent = result.summary.courses.length > 1
       ? "Seu pedido em grupo concentra todos os cursos selecionados em uma única referência."
       : result.summary.courses[0].description || "Curso sem descrição.";
@@ -1337,9 +1380,9 @@ async function loadCheckoutPage() {
     bundleDiscount.textContent = result.summary.bundleDiscountFormatted;
     promoDiscount.textContent = result.summary.promoDiscountFormatted;
     price.textContent = result.summary.totalFormatted;
-    pixKey.textContent = result.pix.key || "Configure a vari?vel PIX_KEY";
-    pixBeneficiary.textContent = result.pix.beneficiary || "Configure a vari?vel PIX_BENEFICIARY";
-    pixCopyCode.value = result.pix.copyPasteCode || "Configure a vari?vel PIX_COPY_PASTE_CODE";
+    pixKey.textContent = result.pix.key || "Configure a variável PIX_KEY";
+    pixBeneficiary.textContent = result.pix.beneficiary || "Configure a variável PIX_BENEFICIARY";
+    pixCopyCode.value = result.pix.copyPasteCode || "Configure a variável PIX_COPY_PASTE_CODE";
 
     if (result.pix.qrCodeImageUrl) {
       pixQrImage.src = result.pix.qrCodeImageUrl;
@@ -1388,7 +1431,7 @@ async function loadCheckoutPage() {
     createOrderButton.disabled = false;
 
     if (!orderResult.response.ok || !orderResult.result) {
-      message.textContent = orderResult.result.message || "N?o foi poss?vel gerar o pedido.";
+      message.textContent = orderResult.result.message || "Não foi possível gerar o pedido.";
       return;
     }
 
@@ -1397,7 +1440,7 @@ async function loadCheckoutPage() {
     }
 
     await renderCheckout();
-    message.textContent = `${orderResult.result.message} Informe est? referencia ao administrador: ${orderResult.result.groupReference}. Total do pedido: ${orderResult.result.totalFormatted}.`;
+    message.textContent = `${orderResult.result.message} Informe esta referência ao administrador: ${orderResult.result.groupReference}. Total do pedido: ${orderResult.result.totalFormatted}.`;
   });
 }
 

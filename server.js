@@ -7,7 +7,7 @@ const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const { isMailerConfigured, sendCourseReleasedEmail } = require("./src/mailer");
+const { isMailerConfigured, sendCourseReleasedEmail, sendCertificateReleasedEmail } = require("./src/mailer");
 const { getAppConfig, validateProductionConfig } = require("./src/config");
 const {
   initDatabase,
@@ -443,7 +443,7 @@ app.get("/api/session", asyncHandler(async (req, res) => {
   if (!user) {
     return res.status(401).json({
       success: false,
-      message: "Nenhuma sess?o ativa."
+      message: "Nenhuma sess\u00e3o ativa."
     });
   }
 
@@ -456,7 +456,7 @@ app.get("/api/session", asyncHandler(async (req, res) => {
 app.get("/api/protegido", requireAuth, (req, res) => {
   res.json({
     success: true,
-    message: `Bem-vindo, ${req.user.nome}. Sua sess?o est? ativa.`,
+    message: `Bem-vindo, ${req.user.nome}. Sua sess\u00e3o est\u00e1 ativa.`,
     user: sanitizeUser(req.user)
   });
 });
@@ -509,7 +509,7 @@ app.get("/api/courses/:id", asyncHandler(async (req, res) => {
   if (!course) {
     return res.status(404).json({
       success: false,
-      message: "Curso n?o encontrado."
+      message: "Curso n\u00e3o encontrado."
     });
   }
 
@@ -708,7 +708,7 @@ app.post("/api/courses/:id/enroll", requireAuth, asyncHandler(async (req, res) =
   if (!course) {
     return res.status(404).json({
       success: false,
-      message: "Curso n?o encontrado."
+      message: "Curso n\u00e3o encontrado."
     });
   }
 
@@ -736,14 +736,14 @@ app.post("/api/admin/release-course", requireAdmin, asyncHandler(async (req, res
   if (!user) {
     return res.status(404).json({
       success: false,
-      message: "Aluno n?o encontrado com este e-mail."
+      message: "Aluno n\u00e3o encontrado com este e-mail."
     });
   }
 
   if (!course) {
     return res.status(404).json({
       success: false,
-      message: "Curso n?o encontrado."
+      message: "Curso n\u00e3o encontrado."
     });
   }
 
@@ -756,7 +756,62 @@ app.post("/api/admin/release-course", requireAdmin, asyncHandler(async (req, res
     success: true,
     message: mailResult.sent
       ? `Curso ${course.title} liberado e e-mail enviado para ${user.email}.`
-      : `Curso ${course.title} liberado. E-mail não enviado: ${mailResult.message}`,
+      : `Curso ${course.title} liberado. E-mail n\u00e3o enviado: ${mailResult.message}`,
+    mail: mailResult
+  });
+}));
+
+app.post("/api/admin/release-certificate", requireAdmin, asyncHandler(async (req, res) => {
+  const email = String(req.body.email || "").trim().toLowerCase();
+  const courseId = Number(req.body.courseId);
+  const user = await findUserByEmail(email);
+  const course = await getCourseById(courseId, req.user.id);
+
+  if (!email || !courseId) {
+    return res.status(400).json({
+      success: false,
+      message: "Informe o e-mail do aluno e o curso."
+    });
+  }
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "Aluno n\u00e3o encontrado com este e-mail."
+    });
+  }
+
+  if (!course) {
+    return res.status(404).json({
+      success: false,
+      message: "Curso n\u00e3o encontrado."
+    });
+  }
+
+  const enrolled = await userHasEnrollment(user.id, courseId);
+  if (!enrolled) {
+    return res.status(400).json({
+      success: false,
+      message: "O aluno precisa estar matriculado no curso antes de receber o certificado."
+    });
+  }
+
+  const certificate = await issueCertificate(user.id, courseId);
+  const appBaseUrl = process.env.APP_BASE_URL || `http://localhost:${PORT}`;
+  const mailResult = await sendCertificateReleasedEmail({
+    to: user.email,
+    userName: user.nome,
+    courseTitle: course.title,
+    certificateUrl: `${appBaseUrl}/certificado/${courseId}`,
+    loginUrl: `${appBaseUrl}/login`
+  });
+
+  res.json({
+    success: true,
+    message: mailResult.sent
+      ? `Certificado de ${course.title} liberado e enviado para ${user.email}.`
+      : `Certificado de ${course.title} liberado. E-mail n\u00e3o enviado: ${mailResult.message}`,
+    certificate,
     mail: mailResult
   });
 }));
@@ -769,7 +824,7 @@ app.post("/api/admin/orders/:id/approve", requireAdmin, asyncHandler(async (req,
   if (!order) {
     return res.status(404).json({
       success: false,
-      message: "Pedido n?o encontrado."
+      message: "Pedido n\u00e3o encontrado."
     });
   }
 
@@ -801,7 +856,7 @@ app.post("/api/admin/orders/:id/approve", requireAdmin, asyncHandler(async (req,
     success: true,
     message: lastMailResult && lastMailResult.sent
       ? `Pedido${order.groupReference ? " em grupo " + order.groupReference : " " + order.reference} aprovado, cursos liberados e e-mail enviado.`
-      : `Pedido${order.groupReference ? " em grupo " + order.groupReference : " " + order.reference} aprovado e cursos liberados. E-mail não enviado: ${lastMailResult ? lastMailResult.message : "SMTP não configurado."}`,
+      : `Pedido${order.groupReference ? " em grupo " + order.groupReference : " " + order.reference} aprovado e cursos liberados. E-mail n\u00e3o enviado: ${lastMailResult ? lastMailResult.message : "SMTP não configurado."}`,
     orders: approvedOrders,
     mail: lastMailResult
   });
@@ -834,7 +889,7 @@ app.post("/api/admin/promo-codes", requireAdmin, asyncHandler(async (req, res) =
   if (!code) {
     return res.status(400).json({
       success: false,
-      message: "Informe o c?digo promocional."
+      message: "Informe o c\u00f3digo promocional."
     });
   }
 
@@ -886,7 +941,7 @@ app.get("/api/lessons/:id", requireAuth, asyncHandler(async (req, res) => {
   if (!lesson) {
     return res.status(404).json({
       success: false,
-      message: "Aula n?o encontrada."
+      message: "Aula n\u00e3o encontrada."
     });
   }
 
@@ -935,7 +990,7 @@ app.post("/api/lessons/:id/complete", requireAuth, asyncHandler(async (req, res)
   if (!lesson) {
     return res.status(404).json({
       success: false,
-      message: "Aula n?o encontrada."
+      message: "Aula n\u00e3o encontrada."
     });
   }
 
@@ -954,7 +1009,7 @@ app.post("/api/lessons/:id/complete", requireAuth, asyncHandler(async (req, res)
   res.json({
     success: true,
     message: certificateStatus.progress.completed
-      ? "Todas as aulas foram marcadas como assistidas. Envie a avalia??o final para liberar o certificado."
+      ? "Todas as aulas foram marcadas como assistidas. Envie a avalia\u00e7\u00e3o final para liberar o certificado."
       : "Aula marcada como assistida.",
     progress: certificateStatus.progress,
     certificate: certificateStatus.certificate,
@@ -973,7 +1028,7 @@ app.post("/api/courses/:id/evaluation", requireAuth, asyncHandler(async (req, re
   if (!course) {
     return res.status(404).json({
       success: false,
-      message: "Curso n?o encontrado."
+      message: "Curso n\u00e3o encontrado."
     });
   }
 
@@ -981,7 +1036,7 @@ app.post("/api/courses/:id/evaluation", requireAuth, asyncHandler(async (req, re
   if (!progress.completed) {
     return res.status(400).json({
       success: false,
-      message: "Conclua todas as aulas antes de enviar a avalia??o."
+      message: "Conclua todas as aulas antes de enviar a avalia\u00e7\u00e3o."
     });
   }
 
@@ -1002,8 +1057,8 @@ app.post("/api/courses/:id/evaluation", requireAuth, asyncHandler(async (req, re
   res.json({
     success: true,
     message: certificateStatus.certificate
-      ? "Avalia??o enviada com sucesso. Seu certificado j? foi liberado."
-      : "Avalia??o enviada com sucesso.",
+      ? "Avalia\u00e7\u00e3o enviada com sucesso. Seu certificado j\u00e1 foi liberado."
+      : "Avalia\u00e7\u00e3o enviada com sucesso.",
     evaluation,
     certificate: certificateStatus.certificate
   });
@@ -1017,7 +1072,7 @@ app.get("/api/certificates/:courseId", requireAuth, asyncHandler(async (req, res
   if (!certificate) {
     return res.status(404).json({
       success: false,
-      message: "Certificado ainda n?o dispon?vel para este curso."
+      message: "Certificado ainda n\u00e3o dispon\u00edvel para este curso."
     });
   }
 
@@ -1035,7 +1090,7 @@ app.get("/api/lessons/:id/assets/:type", requireAuth, asyncHandler(async (req, r
   if (!lesson) {
     return res.status(404).json({
       success: false,
-      message: "Aula n?o encontrada."
+      message: "Aula n\u00e3o encontrada."
     });
   }
 
@@ -1059,7 +1114,7 @@ app.get("/api/lessons/:id/assets/:type", requireAuth, asyncHandler(async (req, r
   if (!relativePath) {
     return res.status(404).json({
       success: false,
-      message: "Arquivo n?o encontrado para esta aula."
+      message: "Arquivo n\u00e3o encontrado para esta aula."
     });
   }
 
@@ -1068,7 +1123,7 @@ app.get("/api/lessons/:id/assets/:type", requireAuth, asyncHandler(async (req, r
   if (!fs.existsSync(absolutePath)) {
     return res.status(404).json({
       success: false,
-      message: "Arquivo n?o encontrado no armazenamento local."
+      message: "Arquivo n\u00e3o encontrado no armazenamento local."
     });
   }
 
@@ -1121,7 +1176,7 @@ app.post("/api/admin/courses", requireAdmin, asyncHandler(async (req, res) => {
   if (priceCents < 0) {
     return res.status(400).json({
       success: false,
-      message: "Informe um pre?o v?lido para o curso."
+      message: "Informe um pre\u00e7o v\u00e1lido para o curso."
     });
   }
 
@@ -1142,7 +1197,7 @@ app.get("/api/admin/lessons/:id", requireAdmin, asyncHandler(async (req, res) =>
   if (!lesson) {
     return res.status(404).json({
       success: false,
-      message: "Aula n?o encontrada."
+      message: "Aula n\u00e3o encontrada."
     });
   }
 
@@ -1159,7 +1214,7 @@ app.get("/api/admin/courses/:id/materials", requireAdmin, asyncHandler(async (re
   if (!course) {
     return res.status(404).json({
       success: false,
-      message: "Curso não encontrado."
+      message: "Curso n\u00e3o encontrado."
     });
   }
 
@@ -1180,7 +1235,7 @@ app.put("/api/admin/courses/:id", requireAdmin, asyncHandler(async (req, res) =>
   if (!existingCourse) {
     return res.status(404).json({
       success: false,
-      message: "Curso n?o encontrado."
+      message: "Curso n\u00e3o encontrado."
     });
   }
 
@@ -1194,7 +1249,7 @@ app.put("/api/admin/courses/:id", requireAdmin, asyncHandler(async (req, res) =>
   if (priceCents < 0) {
     return res.status(400).json({
       success: false,
-      message: "Informe um pre?o v?lido para o curso."
+      message: "Informe um pre\u00e7o v\u00e1lido para o curso."
     });
   }
 
@@ -1214,7 +1269,7 @@ app.delete("/api/admin/courses/:id", requireAdmin, asyncHandler(async (req, res)
   if (!course) {
     return res.status(404).json({
       success: false,
-      message: "Curso n?o encontrado."
+      message: "Curso n\u00e3o encontrado."
     });
   }
 
@@ -1246,7 +1301,7 @@ app.post(
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Curso n?o encontrado."
+        message: "Curso n\u00e3o encontrado."
       });
     }
 
@@ -1315,7 +1370,7 @@ app.put("/api/admin/lessons/:id", requireAdmin, asyncHandler(async (req, res) =>
   if (!lesson) {
     return res.status(404).json({
       success: false,
-      message: "Aula n?o encontrada."
+      message: "Aula n\u00e3o encontrada."
     });
   }
 
@@ -1360,7 +1415,7 @@ app.post(
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Curso não encontrado."
+        message: "Curso n\u00e3o encontrado."
       });
     }
 
@@ -1417,7 +1472,7 @@ app.delete("/api/admin/lessons/:id", requireAdmin, asyncHandler(async (req, res)
   if (!lesson) {
     return res.status(404).json({
       success: false,
-      message: "Aula n?o encontrada."
+      message: "Aula n\u00e3o encontrada."
     });
   }
 
@@ -1531,7 +1586,7 @@ app.post("/logout", (req, res) => {
   res.clearCookie(COOKIE_NAME);
   res.json({
     success: true,
-    message: "Sess?o encerrada com sucesso."
+    message: "Sess\u00e3o encerrada com sucesso."
   });
 });
 
