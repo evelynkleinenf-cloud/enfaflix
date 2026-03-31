@@ -1357,7 +1357,7 @@ async function loadCertificatePage() {
   student.textContent = result.certificate.userName;
   course.textContent = result.certificate.courseTitle;
   date.textContent = `Emitido em ${new Date(result.certificate.issuedAt).toLocaleDateString("pt-BR")}`;
-  code.textContent = `Cdigo: ${result.certificate.certificateCode}`;
+  code.textContent = `Código: ${result.certificate.certificateCode}`;
 }
 
 async function loadCheckoutPage() {
