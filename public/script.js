@@ -629,13 +629,13 @@ async function loadLessonPage() {
   }
 
   if (result.evaluation && evaluationMessage) {
-    evaluationMessage.textContent = "Avaliao j enviada. Voc pode atualizar sua resposta.";
+    evaluationMessage.textContent = "Avaliação do curso já enviada. Você pode atualizar sua resposta.";
   }
 
   if (evaluationForm && evaluationMessage) {
     evaluationForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      evaluationMessage.textContent = "Enviando avalia??o...";
+      evaluationMessage.textContent = "Enviando avaliação do curso...";
 
       const formData = new FormData(evaluationForm);
       const payload = {
@@ -656,7 +656,7 @@ async function loadLessonPage() {
       });
 
       if (!evaluationResult.response.ok || !evaluationResult.result) {
-        evaluationMessage.textContent = evaluationResult.result.message || "N?o foi poss?vel enviar a avalia??o.";
+        evaluationMessage.textContent = evaluationResult.result.message || "Não foi possível enviar a avaliação do curso.";
         return;
       }
 
@@ -1062,7 +1062,7 @@ async function loadAdminPage() {
             <span class="course-meta">Nota ${evaluation.rating}/5</span>
             <h3>${evaluation.courseTitle}</h3>
             <p>${evaluation.userName} (${evaluation.userEmail})</p>
-            <p>${evaluation.comment || "Sem comentario final."}</p>
+            <p>${evaluation.comment || "Sem comentário final."}</p><p><strong>Ponto mais valioso:</strong> ${(() => { try { const answers = evaluation.answersJson ? JSON.parse(evaluation.answersJson) : {}; return answers.learning || "Não informado."; } catch (error) { return "Não informado."; } })()}</p><p><strong>O que melhorar:</strong> ${(() => { try { const answers = evaluation.answersJson ? JSON.parse(evaluation.answersJson) : {}; return answers.improve || "Não informado."; } catch (error) { return "Não informado."; } })()}</p>
           </article>
         `).join("")
         : "<p class='empty-state'>Nenhuma avalia??o enviada ainda.</p>";
@@ -1432,3 +1432,5 @@ if (currentPage === "checkout") {
 if (currentPage === "certificate") {
   loadCertificatePage();
 }
+
+
