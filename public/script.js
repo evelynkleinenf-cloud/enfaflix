@@ -174,6 +174,20 @@ function renderSiteNavigation(user = null) {
     return;
   }
 
+  const navWrapper = navigation.closest(".nav");
+  let toggleButton = navWrapper ? navWrapper.querySelector("[data-nav-toggle]") : null;
+
+  if (navWrapper && !toggleButton) {
+    toggleButton = document.createElement("button");
+    toggleButton.type = "button";
+    toggleButton.className = "nav-toggle";
+    toggleButton.setAttribute("data-nav-toggle", "");
+    toggleButton.setAttribute("aria-expanded", "false");
+    toggleButton.setAttribute("aria-label", "Abrir menu");
+    toggleButton.innerHTML = "<span></span><span></span><span></span>";
+    navWrapper.insertBefore(toggleButton, navigation);
+  }
+
   const currentPage = document.body.dataset.page || "";
   const primaryLinks = getPrimaryNavigationItems()
     .map((item) => `
@@ -202,6 +216,35 @@ function renderSiteNavigation(user = null) {
     ${managementLink}
     ${authLinks}
   `;
+
+  if (toggleButton) {
+    const closeMenu = () => {
+      navigation.classList.remove("open");
+      toggleButton.classList.remove("active");
+      toggleButton.setAttribute("aria-expanded", "false");
+      toggleButton.setAttribute("aria-label", "Abrir menu");
+    };
+
+    toggleButton.onclick = () => {
+      const nextState = !navigation.classList.contains("open");
+      navigation.classList.toggle("open", nextState);
+      toggleButton.classList.toggle("active", nextState);
+      toggleButton.setAttribute("aria-expanded", String(nextState));
+      toggleButton.setAttribute("aria-label", nextState ? "Fechar menu" : "Abrir menu");
+    };
+
+    navigation.querySelectorAll("a, button").forEach((item) => {
+      item.addEventListener("click", () => {
+        if (window.innerWidth <= 800) {
+          closeMenu();
+        }
+      });
+    });
+
+    if (window.innerWidth > 800) {
+      closeMenu();
+    }
+  }
 
   const navLogoutButton = navigation.querySelector("[data-nav-logout]");
   if (navLogoutButton) {
