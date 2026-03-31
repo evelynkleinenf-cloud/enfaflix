@@ -198,12 +198,12 @@ function renderSiteNavigation(user = null) {
     .join("");
 
   const managementLink = user?.isAdmin
-    ? `<a href="/gestao" class="${isNavLinkActive("/gestao", currentPage) ? "active" : ""}">Gestão</a>`
+    ? `<a href="/gestao" class="${isNavLinkActive("/gestao", currentPage) ? "active" : ""}">Gest\u00e3o</a>`
     : "";
 
   const authLinks = user
     ? `
-      <span class="nav-user">Olá, ${user.nome.split(" ")[0]}</span>
+      <span class="nav-user">Ol\u00e1, ${user.nome.split(" ")[0]}</span>
       <button type="button" class="nav-logout" data-nav-logout>Sair</button>
     `
     : `
@@ -223,6 +223,7 @@ function renderSiteNavigation(user = null) {
       toggleButton.classList.remove("active");
       toggleButton.setAttribute("aria-expanded", "false");
       toggleButton.setAttribute("aria-label", "Abrir menu");
+      document.body.classList.remove("nav-open");
     };
 
     toggleButton.onclick = () => {
@@ -231,6 +232,7 @@ function renderSiteNavigation(user = null) {
       toggleButton.classList.toggle("active", nextState);
       toggleButton.setAttribute("aria-expanded", String(nextState));
       toggleButton.setAttribute("aria-label", nextState ? "Fechar menu" : "Abrir menu");
+      document.body.classList.toggle("nav-open", nextState && window.innerWidth <= 800);
     };
 
     navigation.querySelectorAll("a, button").forEach((item) => {
@@ -244,6 +246,12 @@ function renderSiteNavigation(user = null) {
     if (window.innerWidth > 800) {
       closeMenu();
     }
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 800) {
+        closeMenu();
+      }
+    });
   }
 
   const navLogoutButton = navigation.querySelector("[data-nav-logout]");
