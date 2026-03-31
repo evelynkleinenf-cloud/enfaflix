@@ -864,7 +864,9 @@ async function loadAdminPage() {
         const newPosition = window.prompt("Nova posio da aula:", currentPosition);
         const lessonData = await fetchJson(`/api/admin/lessons/${lessonId}`);
         const currentContent = lessonData.result.lesson.content || "";
+        const currentYoutubeUrl = lessonData.result.lesson.youtubeUrl || "";
         const newContent = window.prompt("Novo texto da aula:", currentContent);
+        const newYoutubeUrl = window.prompt("Novo link do YouTube da aula:", currentYoutubeUrl);
 
         const update = await fetchJson(`/api/admin/lessons/${lessonId}`, {
           method: "PUT",
@@ -874,7 +876,8 @@ async function loadAdminPage() {
           body: JSON.stringify({
             title: newTitle,
             position: newPosition || currentPosition,
-            content: newContent === null ? currentContent : newContent
+            content: newContent === null ? currentContent : newContent,
+            youtubeUrl: newYoutubeUrl === null ? currentYoutubeUrl : newYoutubeUrl
           })
         });
 

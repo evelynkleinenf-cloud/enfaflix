@@ -1308,6 +1308,9 @@ app.put("/api/admin/lessons/:id", requireAdmin, asyncHandler(async (req, res) =>
   const title = String(req.body.title || "").trim();
   const content = String(req.body.content || "").trim();
   const position = Number(req.body.position || 1);
+  const youtubeUrl = req.body.youtubeUrl !== undefined
+    ? extractYouTubeEmbedUrl(req.body.youtubeUrl)
+    : undefined;
 
   if (!lesson) {
     return res.status(404).json({
@@ -1329,10 +1332,18 @@ app.put("/api/admin/lessons/:id", requireAdmin, asyncHandler(async (req, res) =>
     position
   });
 
+  if (req.body.youtubeUrl !== undefined) {
+    await updateLessonAssets(lessonId, {
+      youtubeUrl
+    });
+  }
+
+  const refreshedLesson = await getLessonById(lessonId);
+
   res.json({
     success: true,
-    message: `Aula ${updatedLesson.title} atualizada com sucesso.`,
-    lesson: updatedLesson
+    message: `Aula ${refreshedLesson.title} atualizada com sucesso.`,
+    lesson: refreshedLesson
   });
 }));
 
