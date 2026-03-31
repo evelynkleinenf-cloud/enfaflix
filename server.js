@@ -278,7 +278,9 @@ function getPixConfig() {
 
 function ensureLocalUploadsAllowed() {
   if (!appConfig.allowLocalFileUploads) {
-    throw new Error("Uploads locais estão desativados neste ambiente. Use links externos para materiais ou habilite ALLOW_LOCAL_FILE_UPLOADS.");
+    const error = new Error("Uploads locais estao desativados neste ambiente. Use links externos para materiais ou habilite ALLOW_LOCAL_FILE_UPLOADS.");
+    error.status = 400;
+    throw error;
   }
 }
 
@@ -1233,7 +1235,6 @@ app.post(
     { name: "textFile", maxCount: 1 }
   ]),
   asyncHandler(async (req, res) => {
-    ensureLocalUploadsAllowed();
     const courseId = Number(req.params.id);
     const course = await getCourseById(courseId, req.user.id);
     const title = String(req.body.title || "").trim();
@@ -1256,6 +1257,13 @@ app.post(
       });
     }
 
+    const files = req.files || {};
+    const hasLocalFiles = Boolean(files.pdf?.[0] || files.textFile?.[0]);
+
+    if (hasLocalFiles) {
+      ensureLocalUploadsAllowed();
+    }
+
     const lesson = await createLesson({
       courseId,
       title,
@@ -1267,10 +1275,14 @@ app.post(
       position
     });
 
-    const files = req.files || {};
-    const lessonDir = ensureCourseLessonDir(courseId, lesson.id);
-    const pdfPath = writeUploadedFile(lessonDir, files.pdf?.[0], "material.pdf");
-    const textFilePath = writeUploadedFile(lessonDir, files.textFile?.[0], "material.txt");
+    let pdfPath = null;
+    let textFilePath = null;
+
+    if (hasLocalFiles) {
+      const lessonDir = ensureCourseLessonDir(courseId, lesson.id);
+      pdfPath = writeUploadedFile(lessonDir, files.pdf?.[0], "material.pdf");
+      textFilePath = writeUploadedFile(lessonDir, files.textFile?.[0], "material.txt");
+    }
 
     if (youtubeUrl || pdfPath || textFilePath) {
       await updateLessonAssets(lesson.id, {
@@ -1515,9 +1527,9 @@ app.post("/logout", (req, res) => {
 app.use((error, req, res, next) => {
   console.error("Erro no servidor:", error);
 
-  res.status(500).json({
+  res.status(error.status || 500).json({
     success: false,
-    message: "Ocorreu um erro interno no servidor."
+    message: error.status ? error.message : "Ocorreu um erro interno no servidor."
   });
 });
 
@@ -1537,3 +1549,5 @@ initDatabase()
     console.error("Falha ao inicializar o banco de dados:", error);
     process.exit(1);
   });
+
+
